@@ -7,6 +7,11 @@
 
 # ROHDE myKiln for Home Assistant
 
+<p align="center">
+  <a href="https://github.com/Y4nnickB/ha-rohde-mykiln/actions/workflows/validate.yml"><img src="https://github.com/Y4nnickB/ha-rohde-mykiln/actions/workflows/validate.yml/badge.svg" alt="Validate"></a>
+  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=Y4nnickB&repository=ha-rohde-mykiln&category=integration"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open this repository in HACS"></a>
+</p>
+
 Unofficial Home Assistant integration for ROHDE kilns with a Wi-Fi controller
 (ST 310 / ST 411 / ST 630 / ST 632) that are visible in the **myKiln** app
 (mykiln.eu). Not affiliated with or endorsed by Helmut ROHDE GmbH.
@@ -39,6 +44,12 @@ across updates, while a kiln renamed in the myKiln app is picked up automaticall
 When the controller is offline (myKiln reports it as not communicating), all entities
 except **Online** become *unavailable* instead of showing the last known values.
 
+## Testers wanted
+
+Developed against one kiln with an ST 310 controller. If you have another ROHDE kiln
+with a Wi-Fi controller, please open a *Tested with my kiln* issue, even when everything
+works. Responses from different kiln states (idle, heating, holding, offline) help most.
+
 ## Options
 
 *Update interval* (30–600 s, default 60). The controller reports about once a
@@ -53,5 +64,6 @@ minute, so polling faster does not give fresher data.
 ## Branding
 
 The icon and logo (`custom_components/rohde_mykiln/brand/`) are original artwork and
-not the ROHDE logo; ROHDE and myKiln are
+not the ROHDE logo; they are shown by Home Assistant 2026.3 or newer. They can be
+regenerated with `python3 tools/make_brand.py` (needs Pillow). ROHDE and myKiln are
 trademarks of their respective owners.
