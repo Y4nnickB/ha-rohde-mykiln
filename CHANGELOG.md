@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1
+- **Fixed** the documentation and issue tracker links in the integration manifest now point to this repository.
+- **Added** (repository only, no change in behaviour) GitHub Actions that validate the integration with hassfest and HACS, issue forms for bug reports and kiln compatibility reports, and badges in the README.
+
 ## 0.4.0
 - **Added** integration icon and logo, with light/dark and @2x variants (shown by Home Assistant 2026.3 or newer). Original artwork, not the ROHDE logo.
 - **Added** `tools/make_brand.py` to regenerate the images.
