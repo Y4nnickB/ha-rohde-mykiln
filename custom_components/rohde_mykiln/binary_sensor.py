@@ -90,6 +90,8 @@ class MyKilnBinarySensor(MyKilnEntity, BinarySensorEntity):
         super().__init__(coordinator, kiln_id)
         self.entity_description = description
         self._attr_unique_id = f"{kiln_id}_{description.key}"
+        # The "Online" sensor itself must stay available to show that the kiln is offline.
+        self._requires_online = description.key != "online"
 
     @property
     def is_on(self) -> bool | None:

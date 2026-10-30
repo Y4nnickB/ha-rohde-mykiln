@@ -26,6 +26,7 @@ _CSRF_PATTERNS = (
     re.compile(r"value=[\"']([^\"']+)[\"'][^>]*?name=[\"']csrfmiddlewaretoken"),
 )
 _TEMP_RE = re.compile(r"(-?\d+(?:[.,]\d+)?)\s*°?\s*([CFcf])?")
+_AGE_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*([^\W\d_]+)")
 _HOURS_RE = re.compile(r"(\d+)\s*(?:hrs?|hours?|uur|u)\b", re.I)
 _MINUTES_RE = re.compile(r"(\d+)\s*(?:mins?|minutes?|minuten|m)\b", re.I)
 
@@ -89,6 +90,8 @@ class KilnData:
     duration_minutes: int | None
     wifi_bars: int | None
     firing_id: int | None
+    comms_text: str | None  # e.g. "Laatst bijgewerkt: 62 uur geleden"
+    last_update_seconds: int | None  # age of the last report, as coarse as myKiln states it
 
     @property
     def is_heating(self) -> bool:
@@ -133,6 +136,35 @@ def parse_duration(value: Any) -> int | None:
     return (int(hours.group(1)) if hours else 0) * 60 + (
         int(minutes.group(1)) if minutes else 0
     )
+
+
+def parse_age(value: Any) -> int | None:
+    """Parse the age in 'Laatst bijgewerkt: 62 uur geleden' -> seconds.
+
+    myKiln writes this in the account language, so the common units of nl/en/de
+    are understood. Returns None when no amount and unit can be found.
+    """
+    text = _text(value)
+    if not text:
+        return None
+    match = _AGE_RE.search(text)
+    if not match:
+        return None
+    amount = float(match.group(1).replace(",", "."))
+    unit = match.group(2).lower()
+    if unit.startswith(("sec", "sek")):
+        factor = 1
+    elif unit.startswith(("min",)):
+        factor = 60
+    elif unit.startswith(("uur", "hour", "hr", "stunde", "std")) or unit in ("h", "u"):
+        factor = 3600
+    elif unit.startswith(("dag", "day", "tag")):
+        factor = 86400
+    elif unit.startswith(("week", "woche")):
+        factor = 604800
+    else:
+        return None
+    return round(amount * factor)
 
 
 def parse_kiln_list(page: str) -> dict[int, KilnInfo]:
@@ -190,6 +222,8 @@ def parse_kiln(raw: dict[str, Any], info: KilnInfo | None = None) -> KilnData | 
         duration_minutes=parse_duration(raw.get("firing_duration")),
         wifi_bars=_int(raw.get("wifi_bars")),
         firing_id=_int(raw.get("firing_id")),
+        comms_text=_text(raw.get("comms_status")),
+        last_update_seconds=parse_age(raw.get("comms_status")),
     )
 
 

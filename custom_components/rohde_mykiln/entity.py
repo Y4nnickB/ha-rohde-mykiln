@@ -13,6 +13,9 @@ class MyKilnEntity(CoordinatorEntity[MyKilnCoordinator]):
     """One entity belonging to one kiln device."""
 
     _attr_has_entity_name = True
+    # When the controller is offline myKiln keeps returning the last known values.
+    # Entities that depend on live data go "unavailable" instead of showing stale data.
+    _requires_online = True
 
     def __init__(self, coordinator: MyKilnCoordinator, kiln_id: int) -> None:
         super().__init__(coordinator)
@@ -34,4 +37,9 @@ class MyKilnEntity(CoordinatorEntity[MyKilnCoordinator]):
 
     @property
     def available(self) -> bool:
-        return super().available and self.kiln is not None
+        kiln = self.kiln
+        return (
+            super().available
+            and kiln is not None
+            and (kiln.online or not self._requires_online)
+        )

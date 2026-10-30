@@ -38,22 +38,53 @@
   },
   "entity": {
     "sensor": {
-      "temperature_1": { "name": "Temperatuur" },
-      "temperature_2": { "name": "Temperatuur zone 2" },
-      "temperature_3": { "name": "Temperatuur zone 3" },
-      "status": { "name": "Status" },
-      "program": { "name": "Programma" },
-      "progress": { "name": "Voortgang" },
-      "duration": { "name": "Stookduur" },
-      "wifi_signal": { "name": "Wifi-signaal" },
-      "firing_id": { "name": "Stook-ID" }
+      "temperature_1": {
+        "name": "Temperatuur"
+      },
+      "temperature_2": {
+        "name": "Temperatuur zone 2"
+      },
+      "temperature_3": {
+        "name": "Temperatuur zone 3"
+      },
+      "status": {
+        "name": "Status"
+      },
+      "program": {
+        "name": "Programma"
+      },
+      "progress": {
+        "name": "Voortgang"
+      },
+      "duration": {
+        "name": "Stookduur"
+      },
+      "wifi_signal": {
+        "name": "Wifi-signaal"
+      },
+      "firing_id": {
+        "name": "Stook-ID"
+      },
+      "last_update": {
+        "name": "Tijd sinds laatste update"
+      }
     },
     "binary_sensor": {
-      "online": { "name": "Online" },
-      "firing": { "name": "Stook actief" },
-      "heating": { "name": "Verwarmt" },
-      "cooling": { "name": "Koelt af" },
-      "delayed_start": { "name": "Uitgestelde start" }
+      "online": {
+        "name": "Online"
+      },
+      "firing": {
+        "name": "Stook actief"
+      },
+      "heating": {
+        "name": "Verwarmt"
+      },
+      "cooling": {
+        "name": "Koelt af"
+      },
+      "delayed_start": {
+        "name": "Uitgestelde start"
+      }
     }
   }
 }

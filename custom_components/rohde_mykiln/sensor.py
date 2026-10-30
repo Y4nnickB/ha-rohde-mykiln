@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -24,6 +25,9 @@ from .entity import MyKilnEntity
 class MyKilnSensorDescription(SensorEntityDescription):
     value_fn: Callable[[KilnData], StateType]
     exists_fn: Callable[[KilnData], bool] = lambda _kiln: True
+    # Sensors that describe the connection itself must stay available while offline.
+    requires_online: bool = True
+    attrs_fn: Callable[[KilnData], dict[str, Any]] | None = None
 
 
 def _temperature(index: int) -> MyKilnSensorDescription:
@@ -62,6 +66,20 @@ SENSORS: tuple[MyKilnSensorDescription, ...] = (
         device_class=SensorDeviceClass.DURATION,
         native_unit_of_measurement=UnitOfTime.MINUTES,
         value_fn=lambda k: k.duration_minutes,
+    ),
+    MyKilnSensorDescription(
+        key="last_update",
+        translation_key="last_update",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        suggested_unit_of_measurement=UnitOfTime.HOURS,
+        suggested_display_precision=1,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        requires_online=False,
+        value_fn=lambda k: k.last_update_seconds
+        if k.last_update_seconds is not None
+        else (0 if k.online else None),
+        attrs_fn=lambda k: {"reported_text": k.comms_text},
     ),
     MyKilnSensorDescription(
         key="wifi_signal",
@@ -119,6 +137,13 @@ class MyKilnSensor(MyKilnEntity, SensorEntity):
         super().__init__(coordinator, kiln_id)
         self.entity_description = description
         self._attr_unique_id = f"{kiln_id}_{description.key}"
+        self._requires_online = description.requires_online
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        kiln = self.kiln
+        fn = self.entity_description.attrs_fn
+        return fn(kiln) if kiln is not None and fn is not None else None
 
     @property
     def native_value(self) -> StateType:

@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="custom_components/rohde_mykiln/brand/dark_logo@2x.png">
+    <img src="custom_components/rohde_mykiln/brand/logo@2x.png" alt="Kiln" height="96">
+  </picture>
+</p>
+
 # ROHDE myKiln for Home Assistant
 
 Unofficial Home Assistant integration for ROHDE kilns with a Wi-Fi controller
@@ -26,7 +33,11 @@ across updates, while a kiln renamed in the myKiln app is picked up automaticall
 | Status, Program | Text as reported by myKiln (in your account language) |
 | Progress, Firing duration | % and minutes |
 | Online, Firing active, Heating up, Cooling down | binary sensors |
+| Time since last update | diagnostic; stays available while the kiln is offline. Shown in hours (changeable in the entity settings); myKiln reports the age only as coarsely as "62 hours" |
 | Delayed start, Wi-Fi signal, Firing ID | disabled by default |
+
+When the controller is offline (myKiln reports it as not communicating), all entities
+except **Online** become *unavailable* instead of showing the last known values.
 
 ## Options
 
@@ -38,3 +49,10 @@ minute, so polling faster does not give fresher data.
 - Credentials are stored in the Home Assistant config entry, like other integrations that need a login. Data is only sent to mykiln.eu.
 - If the session expires the integration logs in again by itself. If the password was changed, Home Assistant asks you to sign in again.
 - Read-only: this integration cannot start or stop a firing.
+
+## Branding
+
+The icon and logo (`custom_components/rohde_mykiln/brand/`) are original artwork and
+not the ROHDE logo; they are shown by Home Assistant 2026.3 or newer. They can be
+regenerated with `python3 tools/make_brand.py` (needs Pillow). ROHDE and myKiln are
+trademarks of their respective owners.

@@ -38,22 +38,53 @@
   },
   "entity": {
     "sensor": {
-      "temperature_1": { "name": "Temperature" },
-      "temperature_2": { "name": "Temperature zone 2" },
-      "temperature_3": { "name": "Temperature zone 3" },
-      "status": { "name": "Status" },
-      "program": { "name": "Program" },
-      "progress": { "name": "Progress" },
-      "duration": { "name": "Firing duration" },
-      "wifi_signal": { "name": "Wi-Fi signal" },
-      "firing_id": { "name": "Firing ID" }
+      "temperature_1": {
+        "name": "Temperature"
+      },
+      "temperature_2": {
+        "name": "Temperature zone 2"
+      },
+      "temperature_3": {
+        "name": "Temperature zone 3"
+      },
+      "status": {
+        "name": "Status"
+      },
+      "program": {
+        "name": "Program"
+      },
+      "progress": {
+        "name": "Progress"
+      },
+      "duration": {
+        "name": "Firing duration"
+      },
+      "wifi_signal": {
+        "name": "Wi-Fi signal"
+      },
+      "firing_id": {
+        "name": "Firing ID"
+      },
+      "last_update": {
+        "name": "Time since last update"
+      }
     },
     "binary_sensor": {
-      "online": { "name": "Online" },
-      "firing": { "name": "Firing active" },
-      "heating": { "name": "Heating up" },
-      "cooling": { "name": "Cooling down" },
-      "delayed_start": { "name": "Delayed start" }
+      "online": {
+        "name": "Online"
+      },
+      "firing": {
+        "name": "Firing active"
+      },
+      "heating": {
+        "name": "Heating up"
+      },
+      "cooling": {
+        "name": "Cooling down"
+      },
+      "delayed_start": {
+        "name": "Delayed start"
+      }
     }
   }
 }
