@@ -53,6 +53,5 @@ minute, so polling faster does not give fresher data.
 ## Branding
 
 The icon and logo (`custom_components/rohde_mykiln/brand/`) are original artwork and
-not the ROHDE logo; they are shown by Home Assistant 2026.3 or newer. They can be
-regenerated with `python3 tools/make_brand.py` (needs Pillow). ROHDE and myKiln are
+not the ROHDE logo; ROHDE and myKiln are
 trademarks of their respective owners.
