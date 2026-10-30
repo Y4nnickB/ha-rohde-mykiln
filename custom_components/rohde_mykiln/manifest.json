@@ -1,0 +1,12 @@
+{
+  "domain": "rohde_mykiln",
+  "name": "ROHDE myKiln",
+  "codeowners": ["@Y4nnickB"],
+  "config_flow": true,
+  "documentation": "https://github.com/Y4nnickB/ha-rohde-mykiln",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/Y4nnickB/ha-rohde-mykiln/issues",
+  "requirements": [],
+  "version": "0.2.0"
+}

@@ -1,0 +1,59 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "ROHDE myKiln",
+        "description": "Sign in with the account you use for the myKiln app (mykiln.eu). All kilns of the account are added as devices.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Sign in again",
+        "description": "The myKiln session for {email} is no longer valid. Enter the password again.",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach mykiln.eu",
+      "invalid_auth": "Email or password was refused",
+      "unknown": "Unexpected error, see the Home Assistant log"
+    },
+    "abort": {
+      "already_configured": "This account is already configured",
+      "reauth_successful": "Signed in again successfully"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval": "Update interval (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "temperature_1": { "name": "Temperature" },
+      "temperature_2": { "name": "Temperature zone 2" },
+      "temperature_3": { "name": "Temperature zone 3" },
+      "status": { "name": "Status" },
+      "program": { "name": "Program" },
+      "progress": { "name": "Progress" },
+      "duration": { "name": "Firing duration" },
+      "wifi_signal": { "name": "Wi-Fi signal" },
+      "firing_id": { "name": "Firing ID" }
+    },
+    "binary_sensor": {
+      "online": { "name": "Online" },
+      "firing": { "name": "Firing active" },
+      "heating": { "name": "Heating up" },
+      "cooling": { "name": "Cooling down" },
+      "delayed_start": { "name": "Delayed start" }
+    }
+  }
+}
