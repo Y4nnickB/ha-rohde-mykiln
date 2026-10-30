@@ -1,0 +1,50 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing! **Remove passwords, cookies, tokens and your e-mail address** from anything you paste here.
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+      placeholder: "2026.3.1"
+    validations:
+      required: true
+  - type: input
+    id: integration_version
+    attributes:
+      label: Integration version
+      description: Shown in HACS.
+      placeholder: "0.4.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: controller
+    attributes:
+      label: Controller
+      options:
+        - ST 310
+        - ST 411
+        - ST 630
+        - ST 632
+        - Other / unknown
+    validations:
+      required: true
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, what did you get instead?
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: |
+        Settings → System → Logs, filtered on `rohde_mykiln`. For more detail enable debug logging:
+        `logger: logs: custom_components.rohde_mykiln: debug`
+      render: text

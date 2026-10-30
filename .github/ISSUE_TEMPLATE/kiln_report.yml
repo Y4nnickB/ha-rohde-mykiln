@@ -1,0 +1,54 @@
+name: Tested with my kiln
+description: Tell us how the integration works with your kiln/controller (also welcome when everything works)
+labels: [compatibility]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The integration was developed against one kiln with an ST 310 controller. Reports for other
+        kilns and controllers, and for kiln states that have not been verified yet, are very welcome.
+        **Remove passwords, cookies, tokens and your e-mail address** from anything you paste.
+  - type: dropdown
+    id: controller
+    attributes:
+      label: Controller
+      options:
+        - ST 310
+        - ST 411
+        - ST 630
+        - ST 632
+        - Other / unknown
+    validations:
+      required: true
+  - type: input
+    id: kiln
+    attributes:
+      label: Kiln model (optional)
+  - type: input
+    id: language
+    attributes:
+      label: Language of your myKiln account
+      placeholder: "Nederlands / English / Deutsch ..."
+  - type: dropdown
+    id: works
+    attributes:
+      label: Does it work?
+      options:
+        - Everything works
+        - Mostly works, some entities are wrong or missing
+        - Does not work
+    validations:
+      required: true
+  - type: textarea
+    id: status
+    attributes:
+      label: Response of /kilns_get_status/ (optional but very useful)
+      description: |
+        Open https://www.mykiln.eu/kilns_get_status/ while logged in (or use your browser's dev tools, tab Network)
+        and paste the JSON. Different kiln states are especially interesting: idle, heating, holding (soak),
+        cooling, delayed start, offline. Say which state the kiln was in. You may delete the `past_firings` block.
+      render: json
+  - type: textarea
+    id: remarks
+    attributes:
+      label: Anything else
