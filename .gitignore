@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+.DS_Store
+mykiln_credentials.json
+.mykiln_session.json
