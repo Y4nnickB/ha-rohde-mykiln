@@ -19,6 +19,14 @@ ROHDE and myKiln names and the ROHDE logo may be used. ROHDE replied positively.
   Home Assistant integration is an **independent project** that is *not
   developed or officially supported by ROHDE*.
 
+## How this is applied
+
+- The README states that myKiln is a ROHDE service and that this integration
+  is an independent project, not developed or officially supported by ROHDE.
+- Since version 0.4.2 the integration uses the myKiln app icon and the ROHDE
+  logo in Home Assistant, only to identify the products and service it works
+  with.
+
 ## What this means for users
 
 - This integration is still **unofficial**. Please do not contact ROHDE support
