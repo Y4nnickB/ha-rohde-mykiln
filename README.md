@@ -14,7 +14,14 @@
 
 Unofficial Home Assistant integration for ROHDE kilns with a Wi-Fi controller
 (ST 310 / ST 411 / ST 630 / ST 632) that are visible in the **myKiln** app
-(mykiln.eu). Not affiliated with or endorsed by Helmut ROHDE GmbH.
+(mykiln.eu).
+
+> **myKiln is a service of Helmut ROHDE GmbH.** This Home Assistant integration
+> is an independent community project. It is not developed or officially
+> supported by ROHDE. ROHDE has confirmed that the ROHDE and myKiln names may be
+> used to identify the products and service it works with; see
+> [Statement from ROHDE](docs/rohde-statement.md). For questions about this
+> integration, open an issue here rather than contacting ROHDE support.
 
 It uses the same web endpoints as the myKiln website, so it needs your
 myKiln login and may break if ROHDE changes its site.
@@ -66,4 +73,5 @@ minute, so polling faster does not give fresher data.
 The icon and logo (`custom_components/rohde_mykiln/brand/`) are original artwork and
 not the ROHDE logo; they are shown by Home Assistant 2026.3 or newer. They can be
 regenerated with `python3 tools/make_brand.py` (needs Pillow). ROHDE and myKiln are
-trademarks of their respective owners.
+trademarks of Helmut ROHDE GmbH and are used with permission to identify the
+products and service this integration works with.
