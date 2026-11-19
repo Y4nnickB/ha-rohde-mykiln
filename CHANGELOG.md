@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.2
+- **Changed** the integration icon is now the myKiln app icon and the logo is the ROHDE logo, used with permission of Helmut ROHDE GmbH (see `docs/rohde-statement.md`). Light logo plus a white variant for dark mode.
+- **Removed** the original artwork and `tools/make_brand.py`.
+- **Docs** added a statement from ROHDE and updated the disclaimer: this is an independent project, not developed or officially supported by ROHDE.
+
 ## 0.4.1
 - **Fixed** the documentation and issue tracker links in the integration manifest now point to this repository.
 - **Added** (repository only, no change in behaviour) GitHub Actions that validate the integration with hassfest and HACS, issue forms for bug reports and kiln compatibility reports, and badges in the README.

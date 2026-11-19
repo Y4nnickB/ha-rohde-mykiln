@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="custom_components/rohde_mykiln/brand/dark_logo@2x.png">
-    <img src="custom_components/rohde_mykiln/brand/logo@2x.png" alt="Kiln" height="96">
+    <source media="(prefers-color-scheme: dark)" srcset="custom_components/rohde_mykiln/brand/dark_logo.png">
+    <img src="custom_components/rohde_mykiln/brand/logo.png" alt="ROHDE" height="64">
   </picture>
 </p>
 
@@ -14,7 +14,16 @@
 
 Unofficial Home Assistant integration for ROHDE kilns with a Wi-Fi controller
 (ST 310 / ST 411 / ST 630 / ST 632) that are visible in the **myKiln** app
-(mykiln.eu). Not affiliated with or endorsed by Helmut ROHDE GmbH.
+(mykiln.eu).
+
+> **myKiln is a service of Helmut ROHDE GmbH.** This Home Assistant integration
+> is an independent community project. It is not developed or officially
+> supported by ROHDE.
+>
+> ROHDE is aware of this project and has given permission to use the ROHDE and
+> myKiln names and the ROHDE logo to identify the products and service it works
+> with. See [Statement from ROHDE](docs/rohde-statement.md). For questions about
+> this integration, open an issue here rather than contacting ROHDE support.
 
 It uses the same web endpoints as the myKiln website, so it needs your
 myKiln login and may break if ROHDE changes its site.
@@ -63,7 +72,9 @@ minute, so polling faster does not give fresher data.
 
 ## Branding
 
-The icon and logo (`custom_components/rohde_mykiln/brand/`) are original artwork and
-not the ROHDE logo; they are shown by Home Assistant 2026.3 or newer. They can be
-regenerated with `python3 tools/make_brand.py` (needs Pillow). ROHDE and myKiln are
-trademarks of their respective owners.
+The integration icon is the myKiln app icon and the logo is the ROHDE logo
+(`custom_components/rohde_mykiln/brand/`, shown by Home Assistant 2026.3 or newer).
+They are used with permission of Helmut ROHDE GmbH, only to identify the products
+and the service this integration works with. ROHDE and myKiln are trademarks of
+Helmut ROHDE GmbH. The rest of this project is licensed under the terms in
+[LICENSE](LICENSE); that license does not cover the ROHDE and myKiln logos.
