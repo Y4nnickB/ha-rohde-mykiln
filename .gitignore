@@ -3,3 +3,7 @@ __pycache__/
 .DS_Store
 mykiln_credentials.json
 .mykiln_session.json
+.venv/
+.pytest_cache/
+# Raw recordings stay local; put a reviewed copy in tests/captures/ to keep one.
+rohde_mykiln_capture/

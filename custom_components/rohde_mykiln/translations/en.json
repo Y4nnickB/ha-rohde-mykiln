@@ -31,7 +31,11 @@
     "step": {
       "init": {
         "data": {
-          "scan_interval": "Update interval (seconds)"
+          "scan_interval": "Update interval (seconds)",
+          "capture": "Record raw data"
+        },
+        "data_description": {
+          "capture": "For troubleshooting: writes every myKiln response to a file in the rohde_mykiln_capture folder of your Home Assistant configuration. No password is stored. Turn it off when the firing is done."
         }
       }
     }

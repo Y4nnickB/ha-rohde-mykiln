@@ -13,13 +13,20 @@ from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.helpers.selector import (
+    BooleanSelector,
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
 )
 
 from .api import CannotConnect, InvalidAuth, MyKilnClient
-from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, MAX_SCAN_INTERVAL, MIN_SCAN_INTERVAL
+from .const import (
+    CONF_CAPTURE,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+    MAX_SCAN_INTERVAL,
+    MIN_SCAN_INTERVAL,
+)
 from .coordinator import MyKilnConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
@@ -113,15 +120,21 @@ class MyKilnOptionsFlow(OptionsFlow):
     ) -> ConfigFlowResult:
         if user_input is not None:
             return self.async_create_entry(data=user_input)
-        current = self.config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        options = self.config_entry.options
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_SCAN_INTERVAL, default=current): vol.All(
+                    vol.Required(
+                        CONF_SCAN_INTERVAL,
+                        default=options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+                    ): vol.All(
                         vol.Coerce(int),
                         vol.Range(min=MIN_SCAN_INTERVAL, max=MAX_SCAN_INTERVAL),
-                    )
+                    ),
+                    vol.Required(
+                        CONF_CAPTURE, default=options.get(CONF_CAPTURE, False)
+                    ): BooleanSelector(),
                 }
             ),
         )

@@ -2,8 +2,7 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
-import html
+from collections.abc import Callable
 import logging
 import re
 import time
@@ -13,6 +12,16 @@ import aiohttp
 from yarl import URL
 
 from .const import BASE_URL
+from .parser import (  # noqa: F401  (re-exported for the other modules)
+    KilnData,
+    KilnInfo,
+    parse_age,
+    parse_duration,
+    parse_kiln,
+    parse_kiln_list,
+    parse_temperature,
+    to_int,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,20 +34,9 @@ _CSRF_PATTERNS = (
     re.compile(r"name=[\"']csrfmiddlewaretoken[\"'][^>]*?value=[\"']([^\"']+)"),
     re.compile(r"value=[\"']([^\"']+)[\"'][^>]*?name=[\"']csrfmiddlewaretoken"),
 )
-_TEMP_RE = re.compile(r"(-?\d+(?:[.,]\d+)?)\s*°?\s*([CFcf])?")
-_AGE_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*([^\W\d_]+)")
-_HOURS_RE = re.compile(r"(\d+)\s*(?:hrs?|hours?|uur|u)\b", re.I)
-_MINUTES_RE = re.compile(r"(\d+)\s*(?:mins?|minutes?|minuten|m)\b", re.I)
 
-# /kiln_list/ is HTML. Per kiln: <h3>NAME</h3> directly followed by the /kiln_edit/<id>/ link.
-# [^<] keeps a match from spanning over unrelated <h3> elements.
-_KILN_RE = re.compile(
-    r"<h3[^>]*>(?P<name>[^<]+)</h3>\s*<a[^>]*href=[\"']/kiln_edit/(?P<id>\d+)/[\"']"
-)
-_CONTROLLER_RE = re.compile(
-    r"<h3[^>]*>\s*(?P<type>[^<]+?)\s*</h3>\s*<p[^>]*>\s*(?:SN|S/N)\s*(?P<sn>[^<\s]+)\s*</p>"
-)
-_KILN_IMAGE_RE = re.compile(r"/media/kiln_images/[^\"'/]+/(?P<stem>[^\"'/]+?)\.[A-Za-z]{3,4}[\"']")
+# Called with (kind, payload) for every response worth recording; see capture.py.
+EventHook = Callable[[str, dict[str, Any]], None]
 
 
 class MyKilnError(Exception):
@@ -55,176 +53,6 @@ class InvalidAuth(MyKilnError):
 
 class SessionExpired(MyKilnError):
     """The session cookie is missing or no longer valid."""
-
-
-@dataclass(frozen=True)
-class KilnInfo:
-    """Static details of a kiln, scraped from the kiln list page."""
-
-    name: str
-    model: str | None = None  # derived from the kiln image file name
-    controller: str | None = None  # e.g. "ST310"
-    serial: str | None = None
-
-
-@dataclass(frozen=True)
-class KilnData:
-    """Parsed state of one kiln."""
-
-    kiln_id: int
-    name: str
-    model: str | None
-    controller: str | None
-    serial: str | None
-    zones: int
-    online: bool
-    temperatures: tuple[float | None, float | None, float | None]
-    unit: str  # "C" or "F"
-    status: str | None
-    summary: str | None
-    is_firing: bool
-    is_cooling: bool
-    is_delayed_start: bool
-    program: str | None
-    percentage: int | None
-    duration_minutes: int | None
-    wifi_bars: int | None
-    firing_id: int | None
-    comms_text: str | None  # e.g. "Laatst bijgewerkt: 62 uur geleden"
-    last_update_seconds: int | None  # age of the last report, as coarse as myKiln states it
-
-    @property
-    def is_heating(self) -> bool:
-        return self.is_firing and not self.is_cooling
-
-
-def _text(value: Any) -> str | None:
-    if value is None:
-        return None
-    value = str(value).strip()
-    return value or None
-
-
-def _int(value: Any) -> int | None:
-    try:
-        return int(float(value))
-    except (TypeError, ValueError):
-        return None
-
-
-def parse_temperature(value: Any) -> tuple[float | None, str | None]:
-    """Parse '173°C' -> (173.0, 'C'); '-°C' or empty -> (None, None)."""
-    text = _text(value)
-    if not text:
-        return None, None
-    match = _TEMP_RE.search(text)
-    if not match:
-        return None, None
-    unit = match.group(2).upper() if match.group(2) else None
-    return float(match.group(1).replace(",", ".")), unit
-
-
-def parse_duration(value: Any) -> int | None:
-    """Parse '26 hrs 17 mins' -> 1577."""
-    text = _text(value)
-    if not text:
-        return None
-    hours = _HOURS_RE.search(text)
-    minutes = _MINUTES_RE.search(text)
-    if not (hours or minutes):
-        return None
-    return (int(hours.group(1)) if hours else 0) * 60 + (
-        int(minutes.group(1)) if minutes else 0
-    )
-
-
-def parse_age(value: Any) -> int | None:
-    """Parse the age in 'Laatst bijgewerkt: 62 uur geleden' -> seconds.
-
-    myKiln writes this in the account language, so the common units of nl/en/de
-    are understood. Returns None when no amount and unit can be found.
-    """
-    text = _text(value)
-    if not text:
-        return None
-    match = _AGE_RE.search(text)
-    if not match:
-        return None
-    amount = float(match.group(1).replace(",", "."))
-    unit = match.group(2).lower()
-    if unit.startswith(("sec", "sek")):
-        factor = 1
-    elif unit.startswith(("min",)):
-        factor = 60
-    elif unit.startswith(("uur", "hour", "hr", "stunde", "std")) or unit in ("h", "u"):
-        factor = 3600
-    elif unit.startswith(("dag", "day", "tag")):
-        factor = 86400
-    elif unit.startswith(("week", "woche")):
-        factor = 604800
-    else:
-        return None
-    return round(amount * factor)
-
-
-def parse_kiln_list(page: str) -> dict[int, KilnInfo]:
-    """Extract kiln id -> name/model/controller from the /kiln_list/ HTML."""
-    # Controllers that are not linked to a kiln are listed after this marker.
-    cut = page.find("Unlinked controller area")
-    if cut != -1:
-        page = page[:cut]
-    matches = list(_KILN_RE.finditer(page))
-    result: dict[int, KilnInfo] = {}
-    for index, match in enumerate(matches):
-        end = matches[index + 1].start() if index + 1 < len(matches) else len(page)
-        segment = page[match.end() : end]
-        name = html.unescape(match.group("name")).strip()
-        if not name:
-            continue
-        image = _KILN_IMAGE_RE.search(segment)
-        controller = _CONTROLLER_RE.search(segment)
-        result[int(match.group("id"))] = KilnInfo(
-            name=name,
-            model=re.sub(r"[-_]+", " ", image.group("stem")).strip() if image else None,
-            controller=html.unescape(controller.group("type")).strip() if controller else None,
-            serial=html.unescape(controller.group("sn")).strip() if controller else None,
-        )
-    return result
-
-
-def parse_kiln(raw: dict[str, Any], info: KilnInfo | None = None) -> KilnData | None:
-    kiln_id = _int(raw.get("id"))
-    if kiln_id is None:
-        return None
-    temps: list[float | None] = []
-    unit: str | None = None
-    for idx in (1, 2, 3):
-        value, found_unit = parse_temperature(raw.get(f"temperature_{idx}"))
-        temps.append(value)
-        unit = unit or found_unit
-    return KilnData(
-        kiln_id=kiln_id,
-        name=info.name if info else f"ROHDE oven {kiln_id}",
-        model=info.model if info else None,
-        controller=info.controller if info else None,
-        serial=info.serial if info else None,
-        zones=_int(raw.get("zones")) or 1,
-        online=bool(raw.get("is_communicating")),
-        temperatures=(temps[0], temps[1], temps[2]),
-        unit=unit or "C",
-        status=_text(raw.get("firing_status")) or _text(raw.get("kiln_status_summary")),
-        summary=_text(raw.get("kiln_status_summary")),
-        is_firing=bool(raw.get("is_firing")),
-        is_cooling=bool(raw.get("is_cooling")),
-        is_delayed_start=bool(raw.get("is_delayed_start")),
-        program=_text(raw.get("program_title")),
-        percentage=_int(raw.get("firing_percentage")),
-        duration_minutes=parse_duration(raw.get("firing_duration")),
-        wifi_bars=_int(raw.get("wifi_bars")),
-        firing_id=_int(raw.get("firing_id")),
-        comms_text=_text(raw.get("comms_status")),
-        last_update_seconds=parse_age(raw.get("comms_status")),
-    )
 
 
 class MyKilnClient:
@@ -245,6 +73,21 @@ class MyKilnClient:
         self._info: dict[int, KilnInfo] = {}
         self._info_time = 0.0
         self._info_retry_at = 0.0
+        # Last raw /kilns_get_status/ response, for diagnostics.
+        self.last_status: list[Any] | None = None
+        self.on_event: EventHook | None = None
+
+    @property
+    def kiln_info(self) -> dict[int, KilnInfo]:
+        return self._info
+
+    def _emit(self, kind: str, **payload: Any) -> None:
+        if self.on_event is None:
+            return
+        try:
+            self.on_event(kind, payload)
+        except Exception:  # noqa: BLE001  recording must never break polling
+            _LOGGER.exception("Could not record myKiln %s event", kind)
 
     def _cookie(self, name: str) -> str | None:
         morsel = self._session.cookie_jar.filter_cookies(URL(self._base)).get(name)
@@ -265,6 +108,7 @@ class MyKilnClient:
                 None,
             ) or self._cookie("csrftoken")
             if not token:
+                self._emit("login", result="no_csrf_token")
                 raise CannotConnect("No CSRF token found on the login page")
             async with self._session.post(
                 login_url,
@@ -279,8 +123,10 @@ class MyKilnClient:
             ) as resp:
                 status = resp.status
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            self._emit("login", result="error", error=repr(err))
             raise CannotConnect(str(err)) from err
 
+        self._emit("login", result="http", http_status=status)
         if status in (301, 302, 303):
             return  # success is verified by the next status call
         if status == 200:
@@ -294,6 +140,7 @@ class MyKilnClient:
         raise CannotConnect(f"Unexpected HTTP {status} during login")
 
     async def _fetch_status(self) -> list[dict[str, Any]]:
+        started = time.monotonic()
         try:
             async with self._session.get(
                 f"{self._base}/kilns_get_status/",
@@ -302,9 +149,15 @@ class MyKilnClient:
                 timeout=REQUEST_TIMEOUT,
             ) as resp:
                 if resp.status in (*_REDIRECTS, 401, 403):
+                    self._emit("session_expired", http_status=resp.status)
                     raise SessionExpired(f"HTTP {resp.status}")
                 resp.raise_for_status()
                 if "json" not in resp.headers.get("Content-Type", ""):
+                    self._emit(
+                        "session_expired",
+                        http_status=resp.status,
+                        content_type=resp.headers.get("Content-Type"),
+                    )
                     raise SessionExpired("Not a JSON response")
                 data = await resp.json()
         except (aiohttp.ClientError, asyncio.TimeoutError, ValueError) as err:
@@ -312,7 +165,10 @@ class MyKilnClient:
         if isinstance(data, dict):
             data = [data]
         if not isinstance(data, list):
+            self._emit("status", raw=data, error="unexpected format")
             raise CannotConnect("Unexpected response format")
+        self.last_status = data
+        self._emit("status", raw=data, seconds=round(time.monotonic() - started, 2))
         return data
 
     async def _get_text(self, path: str) -> str:
@@ -340,10 +196,18 @@ class MyKilnClient:
             return
         self._info_retry_at = now + INFO_RETRY_SECONDS
         try:
-            info = parse_kiln_list(await self._get_text("/kiln_list/"))
+            page = await self._get_text("/kiln_list/")
         except MyKilnError as err:
             _LOGGER.debug("Could not read the kiln list: %s", err)
+            self._emit("kiln_list", error=repr(err))
             return
+        info = parse_kiln_list(page)
+        # The page header may show the account email; keep it out of recordings.
+        self._emit(
+            "kiln_list",
+            html=re.sub(re.escape(self._email), "<email>", page, flags=re.I),
+            parsed={str(k): v.__dict__ for k, v in info.items()},
+        )
         if info:
             self._info = info
             self._info_time = now
@@ -361,7 +225,7 @@ class MyKilnClient:
             except SessionExpired as err:
                 raise InvalidAuth("Login did not produce a valid session") from err
         items = [item for item in raw if isinstance(item, dict)]
-        ids = [kiln_id for item in items if (kiln_id := _int(item.get("id"))) is not None]
+        ids = [kiln_id for item in items if (kiln_id := to_int(item.get("id"))) is not None]
         await self._async_refresh_info(ids)
-        kilns = (parse_kiln(item, self._info.get(_int(item.get("id")))) for item in items)
+        kilns = (parse_kiln(item, self._info.get(to_int(item.get("id")))) for item in items)
         return {k.kiln_id: k for k in kilns if k}

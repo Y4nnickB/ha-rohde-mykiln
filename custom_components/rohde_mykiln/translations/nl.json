@@ -31,7 +31,11 @@
     "step": {
       "init": {
         "data": {
-          "scan_interval": "Update-interval (seconden)"
+          "scan_interval": "Update-interval (seconden)",
+          "capture": "Ruwe data opnemen"
+        },
+        "data_description": {
+          "capture": "Voor probleemoplossing: schrijft elk antwoord van myKiln naar een bestand in de map rohde_mykiln_capture van je Home Assistant-configuratie. Er wordt geen wachtwoord opgeslagen. Zet dit uit als de stook klaar is."
         }
       }
     }

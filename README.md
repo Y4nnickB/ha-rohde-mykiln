@@ -64,6 +64,18 @@ works. Responses from different kiln states (idle, heating, holding, offline) he
 *Update interval* (30–600 s, default 60). The controller reports about once a
 minute, so polling faster does not give fresher data.
 
+*Record raw data* (off by default). Writes every myKiln response to a file in the
+`rohde_mykiln_capture` folder of your Home Assistant configuration, for
+troubleshooting. See [Recording a firing](docs/recording-a-firing.md).
+
+## Troubleshooting
+
+- **Diagnostics:** on the kiln's device page (or the integration entry), choose
+  ⋮ → *Download diagnostics*. It contains the latest raw myKiln response and what the
+  integration made of it, with email, serial numbers and IDs removed. Attach it to an issue.
+- **A sensor behaves oddly during a firing:** record the firing, see
+  [Recording a firing](docs/recording-a-firing.md).
+
 ## Notes
 
 - Credentials are stored in the Home Assistant config entry, like other integrations that need a login. Data is only sent to mykiln.eu.
