@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+- **Added** option *Record raw data*: writes every myKiln response, re-login and failed poll to `rohde_mykiln_capture/` in the Home Assistant config folder, to troubleshoot a firing. See `docs/recording-a-firing.md`.
+- **Added** diagnostics download (integration entry and per kiln) with the latest raw response and the parsed values; email, serial numbers and IDs are removed.
+- **Added** `tools/replay_capture.py` to replay a recording as a timeline or CSV, and parser tests (`pytest`), also run by GitHub Actions.
+- **Changed** (no change in behaviour) response parsing moved to `parser.py`, which has no Home Assistant dependencies.
+
 ## 0.4.2
 - **Changed** the integration icon is now the myKiln app icon and the logo is the ROHDE logo, used with permission of Helmut ROHDE GmbH (see `docs/rohde-statement.md`). Light logo plus a white variant for dark mode.
 - **Removed** the original artwork and `tools/make_brand.py`.
