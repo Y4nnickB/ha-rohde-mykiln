@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **Added** dashboard card `custom:rohde-mykiln-card` (`custom_components/rohde_mykiln/frontend/rohde-mykiln-card.js`): kiln drawing that glows in the colour of its temperature, firing progress, temperature chart, heating rate and estimated time left. See the README for installation.
+
 ## 0.5.0
 - **Added** option *Record raw data*: writes every myKiln response, re-login and failed poll to `rohde_mykiln_capture/` in the Home Assistant config folder, to troubleshoot a firing. See `docs/recording-a-firing.md`.
 - **Added** diagnostics download (integration entry and per kiln) with the latest raw response and the parsed values; email, serial numbers and IDs are removed.

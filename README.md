@@ -53,6 +53,29 @@ across updates, while a kiln renamed in the myKiln app is picked up automaticall
 When the controller is offline (myKiln reports it as not communicating), all entities
 except **Online** become *unavailable* instead of showing the last known values.
 
+## Dashboard card
+
+The integration comes with a Lovelace card: a drawing of the kiln (top or front
+loader, chosen from the model) that glows in the colour of its temperature, the
+firing progress, a temperature chart since the start of the firing, the heating
+rate, the estimated time left and when myKiln last heard from the kiln.
+
+1. Copy `custom_components/rohde_mykiln/frontend/rohde-mykiln-card.js` to the
+   `www` folder of your Home Assistant configuration.
+2. *Settings → Dashboards → ⋮ → Resources → Add resource*: URL
+   `/local/rohde-mykiln-card.js?v=1`, type *JavaScript module* (the menu needs
+   *Advanced mode* in your user profile). Raise `v` after copying a newer version.
+3. Add the card to a dashboard:
+
+   ```yaml
+   type: custom:rohde-mykiln-card
+   entity: sensor.garage_temperature   # any entity of the kiln
+   # drawing: top                      # optional: top or front, default from the model
+   # hours: 12                         # optional: chart window when not firing
+   ```
+
+The card finds the other entities of the kiln by itself, also after renaming them.
+
 ## Testers wanted
 
 Developed against one kiln with an ST 310 controller. If you have another ROHDE kiln
