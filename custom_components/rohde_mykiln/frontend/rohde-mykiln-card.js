@@ -10,7 +10,7 @@
  * Finds the other entities of the kiln by their translation key, so renamed
  * entity ids keep working. No external dependencies.
  */
-const CARD_VERSION = "0.1.0";
+const CARD_VERSION = "0.6.0";
 
 const KEYS = {
   sensor: ["temperature_1", "temperature_2", "temperature_3", "status", "program", "progress",
@@ -25,6 +25,9 @@ const STRINGS = {
     duration: "Firing time", rate: "Rate", updated: "Last report", zone: "Zone",
     left: "left", now: "now", ago: "ago", signal: "Wi-Fi", noProgram: "No program",
     last: "Last", hours: "h",
+    eEntity: "Kiln (any of its sensors)", eName: "Name (optional)", eDrawing: "Drawing",
+    eHours: "Chart window when not firing (hours)", eAuto: "Automatic, from the model",
+    eTop: "Top loader", eFront: "Front loader",
   },
   nl: {
     heating: "Verwarmt", cooling: "Koelt af", idle: "In rust", offline: "Offline",
@@ -32,6 +35,9 @@ const STRINGS = {
     duration: "Stookduur", rate: "Snelheid", updated: "Laatste melding", zone: "Zone",
     left: "te gaan", now: "nu", ago: "geleden", signal: "Wifi", noProgram: "Geen programma",
     last: "Laatste", hours: "u",
+    eEntity: "Oven (een van zijn sensoren)", eName: "Naam (optioneel)", eDrawing: "Tekening",
+    eHours: "Grafiekvenster buiten een stook (uren)", eAuto: "Automatisch, volgens het model",
+    eTop: "Toplader", eFront: "Frontlader",
   },
   de: {
     heating: "Heizt", cooling: "Kühlt ab", idle: "Bereit", offline: "Offline",
@@ -39,6 +45,9 @@ const STRINGS = {
     duration: "Brenndauer", rate: "Rate", updated: "Letzte Meldung", zone: "Zone",
     left: "übrig", now: "jetzt", ago: "her", signal: "WLAN", noProgram: "Kein Programm",
     last: "Letzte", hours: "Std",
+    eEntity: "Ofen (einer seiner Sensoren)", eName: "Name (optional)", eDrawing: "Zeichnung",
+    eHours: "Diagrammfenster ohne Brand (Stunden)", eAuto: "Automatisch, nach Modell",
+    eTop: "Toplader", eFront: "Frontlader",
   },
 };
 
@@ -72,7 +81,64 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
 }[c]));
 
+const langStrings = (hass) =>
+  STRINGS[(hass?.locale?.language || hass?.language || "en").slice(0, 2)] || STRINGS.en;
+
+// Visual editor shown in the dashboard's card dialog (uses Home Assistant's ha-form).
+class RohdeMyKilnCardEditor extends HTMLElement {
+  setConfig(config) {
+    this._config = { ...config };
+    this._render();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    this._render();
+  }
+
+  _render() {
+    if (!this._hass || !this._config) return;
+    const t = { ...STRINGS.en, ...langStrings(this._hass) };
+    if (!this._form) {
+      this._form = document.createElement("ha-form");
+      this._form.computeLabel = (s) => ({
+        entity: t.eEntity, name: t.eName, drawing: t.eDrawing, hours: t.eHours,
+      })[s.name] ?? s.name;
+      this._form.addEventListener("value-changed", (ev) => {
+        ev.stopPropagation();
+        const config = { ...ev.detail.value };
+        for (const [key, value] of Object.entries(config)) {
+          if (value === "" || value == null || (key === "drawing" && value === "auto")
+            || (key === "hours" && value === 12)) delete config[key];
+        }
+        this._config = config;
+        this.dispatchEvent(new CustomEvent("config-changed", {
+          detail: { config }, bubbles: true, composed: true,
+        }));
+      });
+      this.appendChild(this._form);
+    }
+    this._form.hass = this._hass;
+    this._form.schema = [
+      { name: "entity", required: true,
+        selector: { entity: { filter: { integration: "rohde_mykiln", domain: "sensor" } } } },
+      { name: "name", selector: { text: {} } },
+      { type: "grid", name: "", schema: [
+        { name: "drawing", selector: { select: { mode: "dropdown", options: [
+          { value: "auto", label: t.eAuto }, { value: "top", label: t.eTop },
+          { value: "front", label: t.eFront }] } } },
+        { name: "hours", selector: { number: { min: 1, max: 48, step: 1, mode: "box" } } },
+      ] },
+    ];
+    this._form.data = { drawing: "auto", hours: 12, ...this._config };
+  }
+}
+
 class RohdeMyKilnCard extends HTMLElement {
+  static getConfigElement() {
+    return document.createElement("rohde-mykiln-card-editor");
+  }
+
   static getStubConfig(hass) {
     const entity = Object.values(hass?.entities ?? {}).find(
       (e) => e.platform === "rohde_mykiln" && e.translation_key === "temperature_1",
@@ -516,6 +582,9 @@ const STYLE = `
   @media (prefers-reduced-motion: reduce) { * { animation:none !important; } }
 `;
 
+if (!customElements.get("rohde-mykiln-card-editor")) {
+  customElements.define("rohde-mykiln-card-editor", RohdeMyKilnCardEditor);
+}
 if (!customElements.get("rohde-mykiln-card")) {
   customElements.define("rohde-mykiln-card", RohdeMyKilnCard);
   window.customCards = window.customCards || [];

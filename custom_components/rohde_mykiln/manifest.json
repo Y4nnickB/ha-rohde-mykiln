@@ -3,10 +3,11 @@
   "name": "ROHDE myKiln",
   "codeowners": ["@Y4nnickB"],
   "config_flow": true,
+  "dependencies": ["frontend", "http"],
   "documentation": "https://github.com/Y4nnickB/ha-rohde-mykiln",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/Y4nnickB/ha-rohde-mykiln/issues",
   "requirements": [],
-  "version": "0.5.0"
+  "version": "0.6.0"
 }

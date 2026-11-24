@@ -11,11 +11,14 @@ from homeassistant.helpers.device_registry import DeviceEntry
 from .api import MyKilnClient
 from .const import DOMAIN
 from .coordinator import MyKilnConfigEntry, MyKilnCoordinator
+from .frontend import async_register_card
 
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: MyKilnConfigEntry) -> bool:
+    # Before the first refresh, so the card also loads while myKiln is unreachable.
+    await async_register_card(hass)
     # Own session with its own cookie jar: the login lives in the session cookie.
     session = async_create_clientsession(hass, cookie_jar=aiohttp.CookieJar())
     client = MyKilnClient(session, entry.data[CONF_EMAIL], entry.data[CONF_PASSWORD])
