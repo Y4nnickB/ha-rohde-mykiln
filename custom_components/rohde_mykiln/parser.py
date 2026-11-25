@@ -14,6 +14,14 @@ _TEMP_RE = re.compile(r"(-?\d+(?:[.,]\d+)?)\s*°?\s*([CFcf])?")
 _AGE_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*([^\W\d_]+)")
 _HOURS_RE = re.compile(r"(\d+)\s*(?:hrs?|hours?|uur|u)\b", re.I)
 _MINUTES_RE = re.compile(r"(\d+)\s*(?:mins?|minutes?|minuten|m)\b", re.I)
+# firing_status while ramping, e.g. "Stoken bij 150 °C/hr" (nl) -> 150 °C per hour.
+_RATE_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*°?\s*([CF])\s*/\s*(?:hrs?|hours?|h|uur|u|std|stunde)\b", re.I)
+# firing_status while holding at temperature; myKiln sends "Soak" (also in a Dutch account).
+_HOLD_RE = re.compile(r"\b(?:soak\w*|hold\w*|houd\w*|halte\w*)\b", re.I)
+# myKiln sends "-" for fields that have no value (no program, not firing).
+_PLACEHOLDERS = frozenset({"-", "--", "–", "—"})
+
+PHASES = ("idle", "delayed_start", "heating", "holding", "cooling")
 
 # /kiln_list/ is HTML. Per kiln: <h3>NAME</h3> directly followed by the /kiln_edit/<id>/ link.
 # [^<] keeps a match from spanning over unrelated <h3> elements.
@@ -61,16 +69,32 @@ class KilnData:
     firing_id: int | None
     comms_text: str | None  # e.g. "Laatst bijgewerkt: 62 uur geleden"
     last_update_seconds: int | None  # age of the last report, as coarse as myKiln states it
+    is_holding: bool = False  # firing, holding at temperature ("Soak")
+    ramp_rate: float | None = None  # programmed rate of the current segment, degrees per hour
 
     @property
     def is_heating(self) -> bool:
-        return self.is_firing and not self.is_cooling
+        """Firing and still ramping: not holding and not cooling down."""
+        return self.is_firing and not self.is_cooling and not self.is_holding
+
+    @property
+    def phase(self) -> str:
+        if self.is_delayed_start:
+            return "delayed_start"
+        if self.is_firing and self.is_cooling:
+            return "cooling"
+        if self.is_holding:
+            return "holding"
+        if self.is_firing:
+            return "heating"
+        return "idle"
 
     def as_dict(self) -> dict[str, Any]:
         """All fields plus derived values, for recordings and diagnostics."""
         data = asdict(self)
         data["temperatures"] = list(self.temperatures)
         data["is_heating"] = self.is_heating
+        data["phase"] = self.phase
         return data
 
 
@@ -78,7 +102,20 @@ def _text(value: Any) -> str | None:
     if value is None:
         return None
     value = str(value).strip()
-    return value or None
+    return value if value and value not in _PLACEHOLDERS else None
+
+
+def parse_ramp_rate(value: Any) -> float | None:
+    """Parse 'Stoken bij 150 °C/hr' -> 150.0; None when the text has no rate."""
+    text = _text(value)
+    match = _RATE_RE.search(text) if text else None
+    return float(match.group(1).replace(",", ".")) if match else None
+
+
+def is_hold_text(value: Any) -> bool:
+    """True for the firing status myKiln shows while holding at temperature."""
+    text = _text(value)
+    return bool(text and _HOLD_RE.search(text))
 
 
 def to_int(value: Any) -> int | None:
@@ -178,6 +215,10 @@ def parse_kiln(raw: dict[str, Any], info: KilnInfo | None = None) -> KilnData | 
         value, found_unit = parse_temperature(raw.get(f"temperature_{idx}"))
         temps.append(value)
         unit = unit or found_unit
+    is_firing = bool(raw.get("is_firing"))
+    is_cooling = bool(raw.get("is_cooling"))
+    firing_status = raw.get("firing_status")
+    is_holding = is_firing and not is_cooling and is_hold_text(firing_status)
     return KilnData(
         kiln_id=kiln_id,
         name=info.name if info else f"ROHDE oven {kiln_id}",
@@ -188,10 +229,10 @@ def parse_kiln(raw: dict[str, Any], info: KilnInfo | None = None) -> KilnData | 
         online=bool(raw.get("is_communicating")),
         temperatures=(temps[0], temps[1], temps[2]),
         unit=unit or "C",
-        status=_text(raw.get("firing_status")) or _text(raw.get("kiln_status_summary")),
+        status=_text(firing_status) or _text(raw.get("kiln_status_summary")),
         summary=_text(raw.get("kiln_status_summary")),
-        is_firing=bool(raw.get("is_firing")),
-        is_cooling=bool(raw.get("is_cooling")),
+        is_firing=is_firing,
+        is_cooling=is_cooling,
         is_delayed_start=bool(raw.get("is_delayed_start")),
         program=_text(raw.get("program_title")),
         percentage=to_int(raw.get("firing_percentage")),
@@ -200,4 +241,8 @@ def parse_kiln(raw: dict[str, Any], info: KilnInfo | None = None) -> KilnData | 
         firing_id=to_int(raw.get("firing_id")),
         comms_text=_text(raw.get("comms_status")),
         last_update_seconds=parse_age(raw.get("comms_status")),
+        is_holding=is_holding,
+        ramp_rate=parse_ramp_rate(firing_status)
+        if is_firing and not is_cooling and not is_holding
+        else None,
     )

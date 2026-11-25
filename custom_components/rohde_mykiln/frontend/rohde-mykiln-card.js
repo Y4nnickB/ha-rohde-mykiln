@@ -10,17 +10,17 @@
  * Finds the other entities of the kiln by their translation key, so renamed
  * entity ids keep working. No external dependencies.
  */
-const CARD_VERSION = "0.6.0";
+const CARD_VERSION = "0.7.0";
 
 const KEYS = {
   sensor: ["temperature_1", "temperature_2", "temperature_3", "status", "program", "progress",
-    "duration", "last_update", "wifi_signal"],
-  binary_sensor: ["online", "firing", "heating", "cooling", "delayed_start"],
+    "duration", "last_update", "wifi_signal", "phase", "ramp_rate"],
+  binary_sensor: ["online", "firing", "heating", "holding", "cooling", "delayed_start"],
 };
 
 const STRINGS = {
   en: {
-    heating: "Heating", cooling: "Cooling down", idle: "Idle", offline: "Offline",
+    heating: "Heating", holding: "Holding", programmed: "programmed", cooling: "Cooling down", idle: "Idle", offline: "Offline",
     waiting: "Delayed start", unavailable: "Kiln not found", progress: "Progress",
     duration: "Firing time", rate: "Rate", updated: "Last report", zone: "Zone",
     left: "left", now: "now", ago: "ago", signal: "Wi-Fi", noProgram: "No program",
@@ -30,7 +30,7 @@ const STRINGS = {
     eTop: "Top loader", eFront: "Front loader",
   },
   nl: {
-    heating: "Verwarmt", cooling: "Koelt af", idle: "In rust", offline: "Offline",
+    heating: "Verwarmt", holding: "Houdt temperatuur", programmed: "geprogrammeerd", cooling: "Koelt af", idle: "In rust", offline: "Offline",
     waiting: "Uitgestelde start", unavailable: "Oven niet gevonden", progress: "Voortgang",
     duration: "Stookduur", rate: "Snelheid", updated: "Laatste melding", zone: "Zone",
     left: "te gaan", now: "nu", ago: "geleden", signal: "Wifi", noProgram: "Geen programma",
@@ -40,7 +40,7 @@ const STRINGS = {
     eTop: "Toplader", eFront: "Frontlader",
   },
   de: {
-    heating: "Heizt", cooling: "Kühlt ab", idle: "Bereit", offline: "Offline",
+    heating: "Heizt", holding: "Haltezeit", programmed: "programmiert", cooling: "Kühlt ab", idle: "Bereit", offline: "Offline",
     waiting: "Verzögerter Start", unavailable: "Ofen nicht gefunden", progress: "Fortschritt",
     duration: "Brenndauer", rate: "Rate", updated: "Letzte Meldung", zone: "Zone",
     left: "übrig", now: "jetzt", ago: "her", signal: "WLAN", noProgram: "Kein Programm",
@@ -225,6 +225,7 @@ class RohdeMyKilnCard extends HTMLElement {
     if (!online || online.state !== "on") return "offline";
     if (this._on("delayed_start")) return "waiting";
     if (this._on("cooling")) return "cooling";
+    if (this._on("holding") || this._st("phase")?.state === "holding") return "holding";
     if (this._on("heating") || this._on("firing")) return "heating";
     return "idle";
   }
@@ -329,7 +330,7 @@ class RohdeMyKilnCard extends HTMLElement {
   _scene(mode, temp, glow) {
     const hot = glow && mode !== "offline";
     const glowOpacity = hot ? Math.min(1, 0.35 + ((temp - 400) / 900) * 0.65) : 0;
-    const waves = mode === "heating" && temp > 150;
+    const waves = (mode === "heating" || mode === "holding") && temp > 150;
     const cool = mode === "cooling";
     return `
     <svg class="scene" viewBox="0 0 220 112" aria-hidden="true">
@@ -431,17 +432,17 @@ class RohdeMyKilnCard extends HTMLElement {
     const celsius = temp == null ? null : unit.includes("F") ? (temp - 32) / 1.8 : temp;
     const glow = mode === "offline" ? null : glowColor(celsius);
     const accent = {
-      heating: "#e8590c", cooling: "#1c7ed6", idle: "#1b8a98", waiting: "#7048e8", offline: "#868e96",
+      heating: "#e8590c", holding: "#f08c00", cooling: "#1c7ed6", idle: "#1b8a98", waiting: "#7048e8", offline: "#868e96",
     }[mode];
     // The progress line runs from the accent to the current glow colour while hot.
-    const barFill = mode === "heating" && glow ? `linear-gradient(90deg, ${accent}, ${glow})` : accent;
+    const barFill = (mode === "heating" || mode === "holding") && glow ? `linear-gradient(90deg, ${accent}, ${glow})` : accent;
 
     const progress = this._num("progress");
     const durSt = this._st("duration");
     const duration = durSt && this._num("duration") != null
       ? toMinutes(this._num("duration"), durSt.attributes.unit_of_measurement) : null;
-    const active = mode === "heating" || mode === "cooling";
-    const remaining = active && mode === "heating" && progress > 3 && progress < 100 && duration
+    const active = mode === "heating" || mode === "holding" || mode === "cooling";
+    const remaining = (mode === "heating" || mode === "holding") && progress > 3 && progress < 100 && duration
       ? (duration * (100 - progress)) / progress : null;
     const points = this._points();
     let rate = mode === "offline" ? null : this._rate(points);
@@ -474,9 +475,13 @@ class RohdeMyKilnCard extends HTMLElement {
       { icon: "mdi:access-point", label: this._t("updated"), value: luText },
     ].filter(Boolean).slice(0, 4);
 
+    // While ramping, myKiln's status text only repeats the programmed rate shown in its own chip.
+    const showRate = mode === "heating" && this._num("ramp_rate") != null;
     const chips = [
-      statusText && !["unknown", "unavailable"].includes(statusText)
+      !showRate && statusText && !["unknown", "unavailable"].includes(statusText)
         ? `<span class="chip"><ha-icon icon="mdi:information-outline"></ha-icon>${esc(statusText)}</span>` : "",
+      showRate
+        ? `<span class="chip"><ha-icon icon="mdi:speedometer"></ha-icon>${Math.round(this._num("ramp_rate"))} °/h ${this._t("programmed")}</span>` : "",
       remaining != null ? `<span class="chip accent"><ha-icon icon="mdi:flag-checkered"></ha-icon>≈ ${this._fmtMinutes(remaining)} ${this._t("left")}</span>` : "",
       this._num("wifi_signal") != null
         ? `<span class="chip"><ha-icon icon="mdi:wifi-strength-${Math.max(0, Math.min(4, Math.round(this._num("wifi_signal"))))}"></ha-icon>${this._t("signal")}</span>` : "",
@@ -537,7 +542,7 @@ const STYLE = `
   .pill { display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:2px 8px;
     border-radius:999px; color:var(--accent); background:color-mix(in srgb, var(--accent) 15%, transparent); }
   .pill i { width:6px; height:6px; border-radius:50%; background:var(--accent); }
-  .heating .pill i, .cooling .pill i { animation:blink 1.6s ease-in-out infinite; }
+  .heating .pill i, .holding .pill i, .cooling .pill i { animation:blink 1.6s ease-in-out infinite; }
   .sub { margin-top:3px; font-size:12.5px; color:var(--secondary-text-color); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .scene { position:absolute; right:0; bottom:0; height:100%; width:auto; }
   .bar { height:5px; background:color-mix(in srgb, var(--accent) 22%, var(--card-background-color, #fff)); }

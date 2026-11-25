@@ -33,8 +33,11 @@ parser = load_parser()
 
 COLUMNS = (
     "online",
+    "phase",
+    "ramp_rate",
     "is_firing",
     "is_heating",
+    "is_holding",
     "is_cooling",
     "is_delayed_start",
     "status",

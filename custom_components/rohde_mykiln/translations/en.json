@@ -54,6 +54,19 @@
       "status": {
         "name": "Status"
       },
+      "phase": {
+        "name": "Phase",
+        "state": {
+          "idle": "Idle",
+          "delayed_start": "Delayed start",
+          "heating": "Heating up",
+          "holding": "Holding",
+          "cooling": "Cooling down"
+        }
+      },
+      "ramp_rate": {
+        "name": "Programmed heating rate"
+      },
       "program": {
         "name": "Program"
       },
@@ -82,6 +95,9 @@
       },
       "heating": {
         "name": "Heating up"
+      },
+      "holding": {
+        "name": "Holding"
       },
       "cooling": {
         "name": "Cooling down"

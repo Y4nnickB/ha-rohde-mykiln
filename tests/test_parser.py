@@ -103,6 +103,63 @@ def test_status_falls_back_to_summary(parser):
     assert kiln.status == "Idle"
 
 
+# Formats from a recorded firing (Dutch account, ST310 controller, 24 Nov 2026).
+
+def test_idle_placeholders(parser):
+    """Before a firing myKiln sends "-" for status, program and duration."""
+    kiln = parser.parse_kiln(_raw(
+        is_firing=False, firing_status="-", kiln_status_summary="Inactief", program_title="-",
+        firing_percentage="", firing_duration="-", firing_id=None, temperature_1="16°C",
+    ))
+    assert kiln.status == "Inactief"
+    assert kiln.program is None
+    assert kiln.percentage is None and kiln.duration_minutes is None
+    assert kiln.phase == "idle" and kiln.ramp_rate is None
+
+
+def test_ramping(parser):
+    kiln = parser.parse_kiln(_raw(firing_status="Stoken bij 150 °C/hr", kiln_status_summary="Actief"))
+    assert kiln.phase == "heating" and kiln.is_heating and not kiln.is_holding
+    assert kiln.ramp_rate == 150
+
+
+def test_soak_is_holding_not_heating(parser):
+    kiln = parser.parse_kiln(_raw(firing_status="Soak", temperature_1="1220°C", firing_percentage=99))
+    assert kiln.is_holding and not kiln.is_heating
+    assert kiln.phase == "holding" and kiln.ramp_rate is None
+    assert kiln.status == "Soak"
+
+
+def test_cooling_after_program(parser):
+    kiln = parser.parse_kiln(_raw(firing_status="Afkoelen", is_cooling=True, firing_percentage=100,
+                                  firing_duration="11 hrs 33 mins"))
+    assert kiln.phase == "cooling" and not kiln.is_heating and not kiln.is_holding
+    assert kiln.ramp_rate is None and kiln.duration_minutes == 693
+
+
+def test_offline_before_firing(parser):
+    kiln = parser.parse_kiln(_raw(
+        is_communicating=False, is_firing=False, firing_status="-", kiln_status_summary="Offline",
+        temperature_1="-°C", comms_status="Laatst bijgewerkt: 37 uur geleden",
+    ))
+    assert not kiln.online and kiln.status == "Offline"
+    assert kiln.temperatures[0] is None and kiln.last_update_seconds == 37 * 3600
+
+
+@pytest.mark.parametrize(
+    ("text", "rate"),
+    [("Stoken bij 60 °C/hr", 60), ("Firing at 100°C/h", 100), ("Heating at 212 °F/hr", 212),
+     ("Afkoelen", None), ("Soak", None), ("-", None)],
+)
+def test_ramp_rate(parser, text, rate):
+    assert parser.parse_ramp_rate(text) == rate
+
+
+def test_delayed_start_phase(parser):
+    kiln = parser.parse_kiln(_raw(is_firing=False, is_delayed_start=True))
+    assert kiln.phase == "delayed_start"
+
+
 def test_parse_kiln_without_id(parser):
     assert parser.parse_kiln({"temperature_1": "20°C"}) is None
 

@@ -41,6 +41,9 @@ BINARY_SENSORS: tuple[MyKilnBinarySensorDescription, ...] = (
         key="heating", translation_key="heating", value_fn=lambda k: k.is_heating
     ),
     MyKilnBinarySensorDescription(
+        key="holding", translation_key="holding", value_fn=lambda k: k.is_holding
+    ),
+    MyKilnBinarySensorDescription(
         key="cooling", translation_key="cooling", value_fn=lambda k: k.is_cooling
     ),
     MyKilnBinarySensorDescription(

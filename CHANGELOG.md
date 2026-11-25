@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0
+Based on a recorded glaze firing (ST310, Dutch account).
+- **Fixed** *Heating up* stayed on while the kiln held its top temperature ("Soak"); it is now off during a hold.
+- **Fixed** before a firing *Status* and *Program* showed a literal "-"; *Status* now shows myKiln's summary (e.g. "Inactive") and *Program* is empty.
+- **Added** sensor *Phase*: idle, delayed start, heating up, holding, cooling down.
+- **Added** binary sensor *Holding* and sensor *Programmed heating rate* (°C/h of the current ramp, from myKiln's status text).
+- **Changed** the dashboard card shows *Holding* during a soak and the programmed rate next to the measured one.
+
 ## 0.6.0
 - **Added** dashboard card `custom:rohde-mykiln-card` (`custom_components/rohde_mykiln/frontend/rohde-mykiln-card.js`): kiln drawing that glows in the colour of its temperature, firing progress, temperature chart, heating rate and estimated time left. The integration loads it automatically (no resource to add) and it can be set up from the card picker with a visual editor.
 

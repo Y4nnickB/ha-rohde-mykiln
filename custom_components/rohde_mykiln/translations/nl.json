@@ -54,6 +54,19 @@
       "status": {
         "name": "Status"
       },
+      "phase": {
+        "name": "Fase",
+        "state": {
+          "idle": "In rust",
+          "delayed_start": "Uitgestelde start",
+          "heating": "Verwarmt",
+          "holding": "Houdt temperatuur",
+          "cooling": "Koelt af"
+        }
+      },
+      "ramp_rate": {
+        "name": "Geprogrammeerde stooksnelheid"
+      },
       "program": {
         "name": "Programma"
       },
@@ -82,6 +95,9 @@
       },
       "heating": {
         "name": "Verwarmt"
+      },
+      "holding": {
+        "name": "Houdt temperatuur"
       },
       "cooling": {
         "name": "Koelt af"

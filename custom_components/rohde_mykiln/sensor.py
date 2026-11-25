@@ -17,6 +17,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
 from .api import KilnData
+from .parser import PHASES
 from .coordinator import MyKilnConfigEntry, MyKilnCoordinator
 from .entity import MyKilnEntity
 
@@ -49,6 +50,20 @@ SENSORS: tuple[MyKilnSensorDescription, ...] = (
     _temperature(2),
     MyKilnSensorDescription(
         key="status", translation_key="status", value_fn=lambda k: k.status
+    ),
+    MyKilnSensorDescription(
+        key="phase",
+        translation_key="phase",
+        device_class=SensorDeviceClass.ENUM,
+        options=list(PHASES),
+        value_fn=lambda k: k.phase,
+    ),
+    MyKilnSensorDescription(
+        key="ramp_rate",
+        translation_key="ramp_rate",
+        native_unit_of_measurement="°C/h",
+        suggested_display_precision=0,
+        value_fn=lambda k: k.ramp_rate,
     ),
     MyKilnSensorDescription(
         key="program", translation_key="program", value_fn=lambda k: k.program
@@ -157,4 +172,7 @@ class MyKilnSensor(MyKilnEntity, SensorEntity):
             if kiln is not None and kiln.unit == "F":
                 return UnitOfTemperature.FAHRENHEIT
             return UnitOfTemperature.CELSIUS
+        if self.entity_description.key == "ramp_rate":
+            kiln = self.kiln
+            return "°F/h" if kiln is not None and kiln.unit == "F" else "°C/h"
         return self.entity_description.native_unit_of_measurement
