@@ -44,9 +44,11 @@ across updates, while a kiln renamed in the myKiln app is picked up automaticall
 | Entity | Notes |
 | --- | --- |
 | Temperature (zone 1, plus 2/3 when the kiln has them) | °C or °F as reported by the kiln |
-| Status, Program | Text as reported by myKiln (in your account language) |
-| Progress, Firing duration | % and minutes |
-| Online, Firing active, Heating up, Cooling down | binary sensors |
+| Phase | *Idle*, *Delayed start*, *Heating up*, *Holding* or *Cooling down*; the easiest entity for automations |
+| Status, Program | Text as reported by myKiln (in your account language); empty when there is nothing to report |
+| Programmed heating rate | °C/h (or °F/h) of the ramp the controller is running; empty while holding, cooling or idle |
+| Progress, Firing duration | % and minutes; the firing duration keeps counting while the kiln cools down |
+| Online, Firing active, Heating up, Holding, Cooling down | binary sensors. *Firing active* stays on from the start of the program until cooling has finished; *Heating up* is off while the kiln holds a temperature ("Soak") |
 | Time since last update | diagnostic; stays available while the kiln is offline. Shown in hours (changeable in the entity settings); myKiln reports the age only as coarsely as "62 hours" |
 | Delayed start, Wi-Fi signal, Firing ID | disabled by default |
 
